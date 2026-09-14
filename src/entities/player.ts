@@ -142,11 +142,11 @@ export class Player extends Entity {
     const body = this.body as Phaser.Physics.Arcade.Body;
 
     // moving
-    if (this.keys.left.isDown) {
+    if (this.keys.left.isDown && !this.isAttacking) {
       this.setVelocityX(-this.moveSpeed);
       this.setFlipX(true);
       this.currentSide = "left";
-    } else if (this.keys.right.isDown) {
+    } else if (this.keys.right.isDown && !this.isAttacking) {
       this.setVelocityX(this.moveSpeed);
       this.setFlipX(false);
       this.currentSide = "right";
