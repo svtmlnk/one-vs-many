@@ -1,4 +1,4 @@
-import { GameObjects, Physics, Scene } from "phaser";
+import { GameObjects, Scene } from "phaser";
 import { Entity } from "./entity";
 import { SPRITES } from "../utils/constaints";
 
@@ -7,7 +7,9 @@ export class Player extends Entity {
   moveSpeed: number;
   private keys: Phaser.Types.Input.Keyboard.CursorKeys;
   interactionZone: GameObjects.Zone;
+  private isAttacking = false;
   private currentSide: "right" | "left";
+  private canDash = true;
 
   constructor(
     scene: Scene,
@@ -20,95 +22,162 @@ export class Player extends Entity {
 
     this.textureKey = texture;
     this.moveSpeed = 500;
+    this.setSize(40, 45);
+    this.currentSide = "right";
 
     // Аналог cursors = this.input.keyboard.createCursorKeys()
     this.keys = scene.input.keyboard!.createCursorKeys();
 
-    // Анимации лучше создавать через scene.anims
-    if (!scene.anims.exists("left")) {
-      scene.anims.create({
-        key: "left",
-        frames: scene.anims.generateFrameNumbers(SPRITES.PLAYER, {
-          start: 0,
-          end: 3,
-        }),
-        frameRate: 10,
-        repeat: -1,
-      });
-    }
-
-    if (!scene.anims.exists("turn")) {
-      scene.anims.create({
-        key: "turn",
-        frames: [{ key: SPRITES.PLAYER, frame: 2 }],
-        frameRate: 20,
-      });
-    }
-
-    if (!scene.anims.exists("jump")) {
-      scene.anims.create({
-        key: "jump",
-        frames: [{ key: SPRITES.PLAYER, frame: 5 }],
-        frameRate: 20,
-      });
-    }
-
-    if (!scene.anims.exists("right")) {
-      scene.anims.create({
-        key: "right",
-        frames: scene.anims.generateFrameNumbers(SPRITES.PLAYER, {
-          start: 5,
-          end: 8,
-        }),
-        frameRate: 10,
-        repeat: -1,
-      });
-    }
-
-    this.scene.input.keyboard!.on("keydown-Z", () => {
-      console.log("z");
+    scene.anims.create({
+      key: "run",
+      frames: scene.anims.generateFrameNumbers(SPRITES.PLAYER_RUN, {
+        start: 0,
+        end: 7,
+      }),
+      frameRate: 15,
+      repeat: -1,
     });
 
-    this.scene.input.keyboard!.on("keydown-Z", () => {
-      console.log("x");
+    scene.anims.create({
+      key: "idle",
+      frames: scene.anims.generateFrameNumbers(SPRITES.PLAYER, {
+        start: 0,
+        end: 6,
+      }),
+      frameRate: 10,
+      repeat: -1,
     });
 
-    // creating interaction zone for player
-    this.interactionZone = this.scene.add.zone(this.x, this.y + 30, 10, 10);
-    this.scene.physics.add.existing(this.interactionZone);
-    (this.interactionZone.body as Physics.Arcade.Body).setAllowGravity(false);
+    scene.anims.create({
+      key: "attack1",
+      frames: scene.anims.generateFrameNumbers(SPRITES.PLAYER_A1, {
+        start: 0,
+        end: 5,
+      }),
+      frameRate: 20,
+      repeat: 0,
+    });
+
+    scene.anims.create({
+      key: "attack2",
+      frames: scene.anims.generateFrameNumbers(SPRITES.PLAYER_A2, {
+        start: 0,
+        end: 5,
+      }),
+      frameRate: 20,
+      repeat: 0,
+    });
+
+    scene.anims.create({
+      key: "jump",
+      frames: scene.anims.generateFrameNumbers(SPRITES.PLAYER_JUMP, {
+        start: 0,
+        end: 1,
+      }),
+      frameRate: 5,
+    });
+
+    scene.anims.create({
+      key: "fall",
+      frames: scene.anims.generateFrameNumbers(SPRITES.PLAYER_FALL, {
+        start: 0,
+        end: 1,
+      }),
+      frameRate: 5,
+    });
+
+    // attack functionality and animation
+    // в будущем нужно реализовать анимацию атак во время бега
+    this.scene.input.keyboard!.on("keydown-Z", () => {
+      const body = this.body as Phaser.Physics.Arcade.Body;
+
+      if (body.touching.down && !this.isAttacking) {
+        this.isAttacking = true;
+        this.anims.play("attack1");
+      }
+    });
+
+    this.scene.input.keyboard!.on("keydown-X", () => {
+      const body = this.body as Phaser.Physics.Arcade.Body;
+
+      if (body.touching.down && !this.isAttacking) {
+        this.isAttacking = true;
+        this.anims.play("attack2");
+      }
+    });
+
+    this.on("animationcomplete", (animation: Phaser.Animations.Animation) => {
+      if (animation.key === "attack1" || animation.key === "attack2") {
+        this.isAttacking = false;
+      }
+    });
+
+    // dash functionality
+    // в будущем нужно добавить анимацию уворота
+    this.scene.input.keyboard!.on("keydown-SHIFT", () => {
+      const body = this.body as Phaser.Physics.Arcade.Body;
+
+      if (body.touching.down && !this.isAttacking && this.canDash) {
+        const direction = this.currentSide === "left" ? -1 : 1;
+
+        this.scene.tweens.add({
+          targets: this,
+          x: this.x + 300 * direction,
+          duration: 400,
+          ease: "Power2",
+        });
+
+        this.canDash = false;
+        console.log('no')
+        
+        setTimeout(() => {
+          this.canDash = true;
+          console.log('yes')
+        }, 1500);
+      }
+    });
   }
 
   update() {
+    const body = this.body as Phaser.Physics.Arcade.Body;
+
+    // moving
     if (this.keys.left.isDown) {
       this.setVelocityX(-this.moveSpeed);
-      this.anims.play("left", true);
+      this.setFlipX(true);
       this.currentSide = "left";
     } else if (this.keys.right.isDown) {
       this.setVelocityX(this.moveSpeed);
-      this.anims.play("right", true);
+      this.setFlipX(false);
       this.currentSide = "right";
     } else {
       this.setVelocityX(0);
-      this.anims.play("turn", true);
     }
 
-    // switching positions for interaction zone
-    switch (this.currentSide) {
-      case "left":
-        this.interactionZone.setPosition(this.x - 50, this.y);
-        break;
-
-      case "right":
-        this.interactionZone.setPosition(this.x + 50, this.y);
-        break;
-    }
-
-    const body = this.body as Phaser.Physics.Arcade.Body;
-
+    // jump
     if (this.keys.space.isDown && body.touching.down) {
       this.setVelocityY(-330);
-      // this.anims.play("jump", true);
+    }
+
+    // animation
+    if (this.isAttacking) {
+      // Во время атаки ничего не меняем
+      return;
+    }
+
+    if (!body.touching.down) {
+      // В воздухе
+      if (body.velocity.y < 0) {
+        this.anims.play("jump", true);
+      } else {
+        this.anims.play("fall", true);
+      }
+    } else if (this.keys.left.isDown || this.keys.right.isDown) {
+      // На земле и движемся
+      this.anims.play("run", true);
+    } else {
+      // На земле и стоим
+      this.anims.play("idle", true);
     }
   }
 }

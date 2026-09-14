@@ -1,6 +1,6 @@
 import { Boot } from "./scenes/Boot";
 import { Game as MainGame } from "./scenes/Game";
-import { AUTO, Game } from "phaser";
+import { AUTO, Game, Scale } from "phaser";
 import { Preloader } from "./scenes/Preloader";
 
 const config: Phaser.Types.Core.GameConfig = {
@@ -9,6 +9,10 @@ const config: Phaser.Types.Core.GameConfig = {
   height: 1080,
   parent: "game-container",
   backgroundColor: "#000000",
+  scale: {
+    mode: Scale.FIT,
+    autoCenter: Scale.CENTER_BOTH,
+  },
   physics: {
     default: "arcade",
     arcade: {
