@@ -10,6 +10,7 @@ export class Player extends Entity {
   private isAttacking = false;
   private currentSide: "right" | "left";
   private canDash = true;
+  private firstAttack = true;
 
   constructor(
     scene: Scene,
@@ -87,22 +88,20 @@ export class Player extends Entity {
     });
 
     // attack functionality and animation
-    // в будущем нужно реализовать анимацию атак во время бега
     this.scene.input.keyboard!.on("keydown-Z", () => {
       const body = this.body as Phaser.Physics.Arcade.Body;
 
       if (body.touching.down && !this.isAttacking) {
         this.isAttacking = true;
-        this.anims.play("attack1");
-      }
-    });
-
-    this.scene.input.keyboard!.on("keydown-X", () => {
-      const body = this.body as Phaser.Physics.Arcade.Body;
-
-      if (body.touching.down && !this.isAttacking) {
-        this.isAttacking = true;
-        this.anims.play("attack2");
+        
+        if(this.firstAttack){
+          this.anims.play("attack1");
+          this.firstAttack = false;
+        }
+        else{
+          this.anims.play("attack2");
+          this.firstAttack = true;
+        }
       }
     });
 

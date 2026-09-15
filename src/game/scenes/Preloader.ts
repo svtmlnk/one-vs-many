@@ -19,6 +19,12 @@ export class Preloader extends Scene {
     //  Load the assets for the game - Replace with your own assets
     this.load.image("sky", "assets/sky.png");
     this.load.image("ground", "assets/platform.png");
+
+    this.load.spritesheet("enemy", "assets/enemy/NightBorne.png", {
+      frameWidth: 80,
+      frameHeight: 80,
+    });
+
     this.load.spritesheet("player", "assets/player/Idle.png", {
       frameWidth: 200,
       frameHeight: 200,

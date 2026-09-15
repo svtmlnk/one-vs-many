@@ -3,7 +3,11 @@ export const SIZES = {
     PLAYER: {
         WIDTH: 49,
         HEIGHT: 60,
-    }
+    },
+    ENEMY: {
+        WIDTH: 80,
+        HEIGHT: 80,
+    },
 }
 
 // sprite naming
@@ -14,5 +18,6 @@ export const SPRITES = {
     PLAYER_FALL: 'player_fall',
     PLAYER_A1: 'player_a1',
     PLAYER_A2: 'player_a2',
+    ENEMY: 'enemy',
     GROUND: 'ground'
 }
