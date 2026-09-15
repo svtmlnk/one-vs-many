@@ -2,6 +2,7 @@ import { Boot } from "./scenes/Boot";
 import { Game as MainGame } from "./scenes/Game";
 import { AUTO, Game, Scale } from "phaser";
 import { Preloader } from "./scenes/Preloader";
+import { Menu } from "./scenes/Menu";
 
 const config: Phaser.Types.Core.GameConfig = {
   type: AUTO,
@@ -21,7 +22,7 @@ const config: Phaser.Types.Core.GameConfig = {
       gravity: { y: 800 },
     },
   },
-  scene: [Boot, Preloader, MainGame],
+  scene: [Boot, Menu, Preloader, MainGame],
 };
 
 const StartGame = (parent: string) => {

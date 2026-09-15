@@ -6,6 +6,7 @@ export class Enemy extends Entity {
   textureKey: string;
   moveSpeed: number;
   interactionZone: GameObjects.Zone;
+  enemyHealth: 100;
 
   constructor(
     scene: Scene,
