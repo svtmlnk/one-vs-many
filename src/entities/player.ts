@@ -1,6 +1,7 @@
-import { GameObjects, Scene } from "phaser";
+import { GameObjects, Math, Scene } from "phaser";
 import { Entity } from "./entity";
 import { SPRITES } from "../utils/constaints";
+import { Enemy } from "./enemy";
 
 export class Player extends Entity {
   textureKey: string;
@@ -11,6 +12,10 @@ export class Player extends Entity {
   private currentSide: "right" | "left";
   private canDash = true;
   private firstAttack = true;
+  playerHealthBar: Phaser.GameObjects.Graphics;
+  enemyHealthBar: Phaser.GameObjects.Graphics;
+  enemies: Entity[];
+  target: Entity;
 
   constructor(
     scene: Scene,
@@ -25,6 +30,9 @@ export class Player extends Entity {
     this.moveSpeed = 500;
     this.setSize(40, 45);
     this.currentSide = "right";
+
+    // adding health bar for player (it showing like interface in current scene)
+    this.drawPlayerHealthBar();
 
     // Аналог cursors = this.input.keyboard.createCursorKeys()
     this.keys = scene.input.keyboard!.createCursorKeys();
@@ -90,19 +98,35 @@ export class Player extends Entity {
     // attack functionality and animation
     this.scene.input.keyboard!.on("keydown-Z", () => {
       const body = this.body as Phaser.Physics.Arcade.Body;
+      // const direction = this.currentSide === "left" ? -1 : 1;
 
       if (body.touching.down && !this.isAttacking) {
         this.isAttacking = true;
-        
-        if(this.firstAttack){
+
+        // getting out target for attacking
+        const target = this.findTarget(this.enemies);
+        if (target) {
+          console.log(target);
+          this.attack(target);
+          this.drawEnemyHealthBar(target);
+        }
+
+        if (this.firstAttack) {
           this.anims.play("attack1");
           this.firstAttack = false;
-        }
-        else{
+        } else {
           this.anims.play("attack2");
           this.firstAttack = true;
         }
       }
+
+      // this.scene.tweens.add({
+      //   targets: this,
+      //   x: this.x + 20 * direction,
+      //   duration: 400,
+      //   ease: "Power2",
+      // });
+
     });
 
     this.on("animationcomplete", (animation: Phaser.Animations.Animation) => {
@@ -127,18 +151,102 @@ export class Player extends Entity {
         });
 
         this.canDash = false;
-        console.log('no')
-        
+        console.log("no");
+
         setTimeout(() => {
           this.canDash = true;
-          console.log('yes')
+          console.log("yes");
         }, 1500);
       }
     });
   }
 
+  // creating player's health bar
+  private drawPlayerHealthBar() {
+    this.playerHealthBar = this.scene.add.graphics();
+    this.playerHealthBar.setScrollFactor(0);
+    this.drawHealthBar(this.playerHealthBar, 500, 290, this.health / 100);
+  }
+
+  private drawEnemyHealthBar(target: Entity){
+    this.enemyHealthBar = this.scene.add.graphics();
+    this.enemyHealthBar.setScrollFactor(0);
+    this.drawHealthBar(this.enemyHealthBar, 500, 320, target.health / 100);
+  }
+
+  // drawing health bar
+  private drawHealthBar(
+    graphics: any,
+    x: number,
+    y: number,
+    percentage: number,
+  ) {
+    graphics.fillStyle(0x000000, 1);
+    graphics.fillRect(x, y, 100, 10);
+
+    graphics.fillStyle(0x00ff00, 1);
+    graphics.fillRect(x, y, 100 * percentage, 10);
+  }
+
+  // getting enemies from current scene
+  setEnemies(enemies: Entity[]) {
+    this.enemies = enemies;
+  }
+
+  // находим ближайшего противника
+  private findTarget(enemies: Entity[]) {
+    let target = null;
+    let minDistance = Infinity;
+
+    for (const enemy of enemies) {
+      const distanceToEnemy = Math.Distance.Between(
+        this.x,
+        this.y,
+        enemy.x,
+        enemy.y,
+      );
+
+      if (distanceToEnemy < minDistance) {
+        minDistance = distanceToEnemy;
+        target = enemy;
+      }
+    }
+    return target;
+  }
+
+  // attack functionality
+  attack(target: Entity) {
+    const distanceToEnemy = Math.Distance.Between(
+      this.x,
+      this.y,
+      target.x,
+      target.y,
+    );
+
+    // если противник не далеко от нас, то он получает урон
+    if (distanceToEnemy < 50) {
+      target.takeDamage(25);
+    }
+  }
+
+  // // получение урона
+  // takeDamage(damage: number) {
+  //   super.takeDamage(damage);
+
+  //   if (this.health <= 0) {
+  //     this.deactivate();
+  //   }
+  // }
+
+  // // удаление противника со сцены
+  // deactivate() {
+  //   alert('you are dead :P')
+  // }
+
   update() {
     const body = this.body as Phaser.Physics.Arcade.Body;
+
+    this.drawPlayerHealthBar();
 
     // moving
     if (this.keys.left.isDown && !this.isAttacking) {

@@ -27,15 +27,18 @@ export class Game extends Scene {
     // Создаём игрока
     this.player = new Player(this, 1000, 500, SPRITES.PLAYER);
     this.player.setCollideWorldBounds(true);
-    
+
     // Создаём противника
-    this.enemy = new Enemy(this, 1200, 500, SPRITES.ENEMY);
+    this.enemy = new Enemy(this, 1200, 600, SPRITES.ENEMY);
     this.enemy.setCollideWorldBounds(true);
+    this.enemy.setPlayer(this.player);
+
+    this.player.setEnemies([this.enemy])
 
     // Коллизия
     this.physics.add.collider(this.player, platforms);
     this.physics.add.collider(this.enemy, platforms);
-    this.physics.world.setBounds(0, 0, 1920, 1080)
+    this.physics.world.setBounds(0, 0, 1920, 1080);
 
     // Камера
     this.cameras.main.startFollow(this.player);
@@ -44,9 +47,9 @@ export class Game extends Scene {
   }
 
   update() {
-    // Игрок существует только после Play
-    if (this.player) {
-      this.player.update();
-    }
+    this.player.update();
+    this.enemy.update();
+    console.log(this.player.health)
+    // console.log(this.enemy.health)
   }
 }
