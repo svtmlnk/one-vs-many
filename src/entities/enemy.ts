@@ -72,10 +72,6 @@ export class Enemy extends Entity {
 
   // attack functionality
   attack(target: Entity) {
-    // if (target.health <= 0) {
-    //   return;
-    // }
-
     const distanceToPlayer = Math.Distance.Between(
       this.x,
       this.y,
@@ -85,7 +81,7 @@ export class Enemy extends Entity {
 
     // если противник не далеко от нас, то он получает урон
     if (distanceToPlayer < 50) {
-      target.takeDamage(10);
+      target.takeDamage(5);
     }
   }
 
@@ -107,6 +103,7 @@ export class Enemy extends Entity {
 
     this.isAlive = false;
 
+
     this.healthText.destroy();
 
     if (this.onDeath) {
@@ -115,7 +112,7 @@ export class Enemy extends Entity {
 
     this.destroy();
   }
-  
+
   update() {
     if (!this.player || !this.isAlive) {
       return;
