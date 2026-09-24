@@ -4,6 +4,7 @@ import { Physics, Scene } from "phaser";
 // parent class for other entity objects
 export class Entity extends Physics.Arcade.Sprite {
   health: number;
+  maxHealth: number;
   constructor(
     scene: Scene,
     x: number,
@@ -17,6 +18,7 @@ export class Entity extends Physics.Arcade.Sprite {
     // adding two types of entity existing (visual and physical)
     this.scene.add.existing(this);
     this.scene.physics.add.existing(this);
+    this.maxHealth = 100;
     this.health = 100;
   }
 

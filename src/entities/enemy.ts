@@ -1,22 +1,45 @@
 import { GameObjects, Math, Scene } from "phaser";
+
 import { Entity } from "./entity";
 import { SPRITES } from "../utils/containts";
 
 export class Enemy extends Entity {
   textureKey: string;
   moveSpeed: number;
+
   private healthText: GameObjects.Text;
 
-  private player: Entity;
+  private player?: Entity;
 
-  // enemy actions
-  private attackRange: number;
-  private isAlive: boolean;
+  // ==========================================
+  // ENEMY ACTIONS
+  // ==========================================
+
+  private attackRange = 50;
+
+  private isAlive = true;
+
   public onDeath?: (enemy: Enemy) => void;
 
-  // enemy attack actions
-  private attackCooldown = 1000;
+  // ==========================================
+  // ATTACK
+  // ==========================================
+
+  // Через сколько после входа
+  // игрока в зону начинается атака
+  private readonly attackDelay = 2000;
+
+  // Интервал между атаками
+  private readonly attackCooldown = 1000;
+
+  // Время последней атаки
   private lastAttackTime = 0;
+
+  // Начало нахождения игрока
+  // внутри attackRange
+  private attackStartTime = 0;
+
+  private targetInAttackRange = false;
 
   constructor(
     scene: Scene,
@@ -34,9 +57,9 @@ export class Enemy extends Entity {
     this.setSize(40, 45);
     this.setScale(1.5);
 
-    // это как-то влияет на медленное падение врага
-    this.isAlive = true;
-    this.attackRange = 40;
+    // ==========================================
+    // ANIMATION
+    // ==========================================
 
     if (!scene.anims.exists("enemy_idle")) {
       scene.anims.create({
@@ -52,6 +75,10 @@ export class Enemy extends Entity {
 
     this.anims.play("enemy_idle", true);
 
+    // ==========================================
+    // HEALTH TEXT
+    // ==========================================
+
     this.healthText = scene.add.text(this.x, this.y - 50, `${this.health}`, {
       fontSize: "12px",
       color: "#ffffff",
@@ -60,18 +87,36 @@ export class Enemy extends Entity {
     this.healthText.setOrigin(0.5);
   }
 
-  // getting player from current scene and setting his info in enemy
+  // ==========================================
+  // SET PLAYER
+  // ==========================================
+
   setPlayer(player: Entity) {
     this.player = player;
   }
 
-  // following to player functionality
+  // ==========================================
+  // FOLLOW PLAYER
+  // ==========================================
+
   followToPlayer(player: Entity) {
+    if (!this.isAlive) {
+      return;
+    }
+
     this.scene.physics.moveToObject(this, player, this.moveSpeed);
   }
 
-  // attack functionality
+  // ==========================================
+  // ATTACK
+  // ==========================================
+
   attack(target: Entity) {
+    // Игрок уже умер
+    if (target.health <= 0) {
+      return;
+    }
+
     const distanceToPlayer = Math.Distance.Between(
       this.x,
       this.y,
@@ -79,22 +124,38 @@ export class Enemy extends Entity {
       target.y,
     );
 
-    // если противник не далеко от нас, то он получает урон
-    if (distanceToPlayer < 50) {
+    // Дополнительная проверка:
+    // атакуем только внутри хитбокса
+    if (distanceToPlayer <= this.attackRange) {
       target.takeDamage(5);
+
+      console.log("Enemy attacked player");
     }
   }
 
-  // getting damage and death functionality
+  // ==========================================
+  // TAKE DAMAGE
+  // ==========================================
+
   takeDamage(damage: number) {
+    if (!this.isAlive) {
+      return;
+    }
+
     super.takeDamage(damage);
 
-    this.healthText.setText(`${this.health}`);
+    if (this.healthText) {
+      this.healthText.setText(`${this.health}`);
+    }
 
     if (this.health <= 0) {
       this.deactivate();
     }
   }
+
+  // ==========================================
+  // DEATH
+  // ==========================================
 
   deactivate() {
     if (!this.isAlive) {
@@ -103,22 +164,61 @@ export class Enemy extends Entity {
 
     this.isAlive = false;
 
+    // Останавливаем движение
+    this.setVelocity(0, 0);
 
-    this.healthText.destroy();
+    // Отключаем физику
+    const body = this.body as Phaser.Physics.Arcade.Body;
 
+    body.enable = false;
+
+    // Удаляем HP
+    if (this.healthText) {
+      this.healthText.destroy();
+    }
+
+    // Сообщаем Game.ts
     if (this.onDeath) {
       this.onDeath(this);
     }
 
+    // Удаляем врага
     this.destroy();
   }
 
+  // ==========================================
+  // UPDATE
+  // ==========================================
+
   update() {
+    // ==========================================
+    // NO PLAYER / DEAD ENEMY
+    // ==========================================
+
     if (!this.player || !this.isAlive) {
       return;
     }
 
+    // ==========================================
+    // PLAYER IS DEAD
+    // ==========================================
+
+    // Если игрок умер,
+    // враг больше вообще ничего не делает
+    if (this.player.health <= 0) {
+      this.setVelocity(0, 0);
+
+      this.targetInAttackRange = false;
+      this.attackStartTime = 0;
+
+      return;
+    }
+
     const body = this.body as Phaser.Physics.Arcade.Body;
+
+    // ==========================================
+    // DISTANCE TO PLAYER
+    // ==========================================
 
     const distanceToPlayer = Math.Distance.Between(
       this.x,
@@ -127,25 +227,95 @@ export class Enemy extends Entity {
       this.player.y,
     );
 
+    const currentTime = this.scene.time.now;
+
+    // ==========================================
+    // PLAYER IS OUTSIDE ATTACK RANGE
+    // ==========================================
+
     if (distanceToPlayer > this.attackRange && body.touching.down) {
-      this.followToPlayer(this.player);
+      // Сбрасываем состояние атаки
+      this.targetInAttackRange = false;
+      this.attackStartTime = 0;
 
-      if (this.player.x < this.x) {
-        this.setFlipX(true);
-      } else {
-        this.setFlipX(false);
-      }
-    } else {
-      this.setVelocity(0, 0);
+      // Идём к игроку
+      if (body.touching.down) {
+        this.followToPlayer(this.player);
 
-      // attack functionality
-      const currentTime = this.scene.time.now;
-      if (currentTime - this.lastAttackTime >= this.attackCooldown) {
-        this.attack(this.player);
-        this.lastAttackTime = currentTime;
+        if (this.player.x < this.x) {
+          this.setFlipX(true);
+        } else {
+          this.setFlipX(false);
+        }
       }
-      console.log(this.player.health);
+
+      // Обновляем HP
+      if (this.healthText) {
+        this.healthText.setPosition(this.x, this.y - 50);
+      }
+
+      return;
     }
+
+    // ==========================================
+    // PLAYER ENTERED ATTACK RANGE
+    // ==========================================
+
+    // Враг остановился
+    this.setVelocity(0, 0);
+
+    // Поворачиваемся к игроку
+    if (this.player.x < this.x) {
+      this.setFlipX(true);
+    } else {
+      this.setFlipX(false);
+    }
+
+    // Первый кадр нахождения игрока
+    // внутри attackRange
+    if (!this.targetInAttackRange) {
+      this.targetInAttackRange = true;
+
+      this.attackStartTime = currentTime;
+
+      // Важно:
+      // первая атака произойдёт
+      // только через attackDelay
+      this.lastAttackTime = currentTime;
+
+      console.log("Player entered enemy hitbox");
+    }
+
+    // ==========================================
+    // WAIT BEFORE FIRST ATTACK
+    // ==========================================
+
+    const timeInsideAttackRange = currentTime - this.attackStartTime;
+
+    if (timeInsideAttackRange < this.attackDelay) {
+      if (this.healthText) {
+        this.healthText.setPosition(this.x, this.y - 50);
+      }
+
+      return;
+    }
+
+    // ==========================================
+    // ATTACK
+    // ==========================================
+
+    if (currentTime - this.lastAttackTime >= this.attackCooldown) {
+      // Последняя проверка перед атакой
+      if (this.player.health > 0 && distanceToPlayer <= this.attackRange) {
+        this.attack(this.player);
+      }
+
+      this.lastAttackTime = currentTime;
+    }
+
+    // ==========================================
+    // HEALTH TEXT
+    // ==========================================
 
     if (this.healthText) {
       this.healthText.setPosition(this.x, this.y - 50);

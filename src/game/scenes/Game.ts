@@ -42,15 +42,9 @@ export class Game extends Scene {
     // GROUND
     // ==========================================
 
-    const ground = this.physics.add.staticImage(
-      950,
-      840,
-      "ground"
-    );
+    const ground = this.physics.add.staticImage(950, 840, "ground");
 
-    ground
-      .setScale(8, 15)
-      .refreshBody();
+    ground.setScale(8, 15).refreshBody();
 
     // Сохраняем границы ground
     this.groundBounds = ground.getBounds();
@@ -59,19 +53,11 @@ export class Game extends Scene {
     // PLAYER
     // ==========================================
 
-    this.player = new Player(
-      this,
-      1000,
-      500,
-      SPRITES.PLAYER
-    );
+    this.player = new Player(this, 1000, 500, SPRITES.PLAYER);
 
     this.player.setCollideWorldBounds(true);
 
-    this.physics.add.collider(
-      this.player,
-      ground
-    );
+    this.physics.add.collider(this.player, ground);
 
     // ==========================================
     // ENEMY GROUP
@@ -80,26 +66,16 @@ export class Game extends Scene {
     this.enemies = this.physics.add.group();
 
     // Враги сталкиваются друг с другом
-    this.physics.add.collider(
-      this.enemies,
-      this.enemies
-    );
+    this.physics.add.collider(this.enemies, this.enemies);
 
     // Враги сталкиваются с ground
-    this.physics.add.collider(
-      this.enemies,
-      ground
-    );
+    this.physics.add.collider(this.enemies, ground);
 
     // ==========================================
     // SPAWN FIRST 3 ENEMIES
     // ==========================================
 
-    for (
-      let i = 0;
-      i < this.maxEnemiesOnScene;
-      i++
-    ) {
+    for (let i = 0; i < this.maxEnemiesOnScene; i++) {
       this.spawnEnemy();
     }
 
@@ -107,9 +83,7 @@ export class Game extends Scene {
     // CAMERA
     // ==========================================
 
-    this.cameras.main.startFollow(
-      this.player
-    );
+    this.cameras.main.startFollow(this.player);
 
     this.cameras.main.setZoom(2);
   }
@@ -119,7 +93,9 @@ export class Game extends Scene {
     this.player.update();
 
     // Враги
-    for (const child of this.enemies.children) {
+    const enemies = this.enemies.getChildren();
+
+    for (const child of enemies) {
       const enemy = child as Enemy;
 
       if (!enemy.active) {
@@ -129,29 +105,19 @@ export class Game extends Scene {
       enemy.update();
     }
   }
-
   // ==========================================
   // SPAWN ENEMY
   // ==========================================
 
   private spawnEnemy() {
     // Все 10 уже созданы
-    if (
-      this.spawnedEnemies >=
-      this.totalEnemies
-    ) {
+    if (this.spawnedEnemies >= this.totalEnemies) {
       return;
     }
 
-    const position =
-      this.getEnemySpawnPosition();
+    const position = this.getEnemySpawnPosition();
 
-    const enemy = new Enemy(
-      this,
-      position.x,
-      position.y,
-      SPRITES.ENEMY
-    );
+    const enemy = new Enemy(this, position.x, position.y, SPRITES.ENEMY);
 
     enemy.setCollideWorldBounds(true);
 
@@ -163,9 +129,7 @@ export class Game extends Scene {
     this.spawnedEnemies++;
 
     // Событие смерти
-    enemy.onDeath = (
-      deadEnemy: Enemy
-    ) => {
+    enemy.onDeath = (deadEnemy: Enemy) => {
       this.handleEnemyDeath(deadEnemy);
     };
 
@@ -177,39 +141,25 @@ export class Game extends Scene {
   // ENEMY DEATH
   // ==========================================
 
-  private handleEnemyDeath(
-    deadEnemy: Enemy
-  ) {
+  private handleEnemyDeath(deadEnemy: Enemy) {
     this.killedEnemies++;
 
-    console.log(
-      `Killed: ${this.killedEnemies}/${this.totalEnemies}`
-    );
+    console.log(`Killed: ${this.killedEnemies}/${this.totalEnemies}`);
 
     // Удаляем врага из группы
-    this.enemies.remove(
-      deadEnemy,
-      true,
-      true
-    );
+    this.enemies.remove(deadEnemy, true, true);
 
     // Обновляем список врагов игрока
     this.updatePlayerEnemies();
 
     // Все убиты
-    if (
-      this.killedEnemies >=
-      this.totalEnemies
-    ) {
+    if (this.killedEnemies >= this.totalEnemies) {
       console.log("win!");
       return;
     }
 
     // Создаём следующего
-    if (
-      this.spawnedEnemies <
-      this.totalEnemies
-    ) {
+    if (this.spawnedEnemies < this.totalEnemies) {
       this.spawnEnemy();
     }
   }
@@ -248,25 +198,17 @@ export class Game extends Scene {
     const enemyHeight = 45;
 
     // Выбираем левый или правый край
-    const spawnFromLeft =
-      Math.Between(0, 1) === 0;
+    const spawnFromLeft = Math.Between(0, 1) === 0;
 
     let x: number;
 
     if (spawnFromLeft) {
-      x =
-        bounds.left +
-        enemyWidth;
+      x = bounds.left + enemyWidth;
     } else {
-      x =
-        bounds.right -
-        enemyWidth;
+      x = bounds.right - enemyWidth;
     }
 
-    const y =
-      bounds.top -
-      enemyHeight / 2 -
-      10;
+    const y = bounds.top - enemyHeight / 2 - 10;
 
     return {
       x,
