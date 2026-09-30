@@ -27,10 +27,10 @@ export class Enemy extends Entity {
 
   // Через сколько после входа
   // игрока в зону начинается атака
-  private readonly attackDelay = 2000;
+  private readonly attackDelay = 300;
 
   // Интервал между атаками
-  private readonly attackCooldown = 1000;
+  private readonly attackCooldown = 500;
 
   // Время последней атаки
   private lastAttackTime = 0;
@@ -127,7 +127,7 @@ export class Enemy extends Entity {
     // Дополнительная проверка:
     // атакуем только внутри хитбокса
     if (distanceToPlayer <= this.attackRange) {
-      target.takeDamage(5);
+      target.takeDamage(3);
 
       console.log("Enemy attacked player");
     }
